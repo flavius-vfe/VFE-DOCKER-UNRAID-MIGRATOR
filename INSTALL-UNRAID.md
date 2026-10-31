@@ -21,7 +21,7 @@ Repeat on **both** Unraid servers:
    | `/dev` | `/host/dev` | read-only (optional) |
    | `/mnt/user/appdata/vfe-docker-unraid-migrator` | `/data` | read/write |
 
-4. Add these **Variables**: `WEB_PORT=8210`, `RSYNC_PORT=8211`, `APP_USERNAME=admin`, `APP_PASSWORD=<your own long unique password>`. **Never commit the password to GitHub.** Optional: `STOP_TIMEOUT=30`, `IMAGE_PULL_TIMEOUT=900`. In Unraid choose the password/masked field option where supported.
+4. Add these **Variables**: `WEB_PORT=8210`, `RSYNC_PORT=8211`, `APP_USERNAME=admin`, `APP_PASSWORD=<your own long unique password>`. Add these **Ports**: `VFE Web UI=8210 TCP`, `VFE Transfer=8211 TCP`. **Never commit the password to GitHub.** Optional: `STOP_TIMEOUT=30`, `IMAGE_PULL_TIMEOUT=900`. In Unraid choose the password/masked field option where supported.
 5. Click **Apply**. Open `http://YOUR-UNRAID-IP:8210`. If the ports are occupied, change the variables on both servers as required. With host networking, do **not** add Docker port mappings.
 6. Repeat on the second server, then configure server IPs and pair the agents within the Web UI. Allow only trusted traffic between the two server LAN addresses on the Web/API and rsync ports.
 
