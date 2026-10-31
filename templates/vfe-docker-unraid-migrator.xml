@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>vfe-docker-unraid-migrator</Name>
+  <Repository>ghcr.io/flavius-vfe/vfe-docker-unraid-migrator:0.0.1</Repository>
+  <Registry>https://ghcr.io</Registry>
+  <Network>host</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/flavius-vfe/VFE-DOCKER-UNRAID-MIGRATOR/issues</Support>
+  <Project>https://github.com/flavius-vfe/VFE-DOCKER-UNRAID-MIGRATOR</Project>
+  <Overview>VFE Docker Unraid Migrator 0.0.1. Bidirectionally migrates one Docker container and its persistent data between two paired Unraid servers on a trusted LAN. Includes seven image-handling modes and interactive conflict resolution. Install the same agent on both servers.</Overview>
+  <Category>Tools:Backup:</Category>
+  <WebUI>http://[IP]:[PORT:8210]</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/flavius-vfe/VFE-DOCKER-UNRAID-MIGRATOR/main/templates/vfe-docker-unraid-migrator.xml</TemplateURL>
+  <Icon/>
+  <ExtraParams>--restart=unless-stopped</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled>0</DateInstalled>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="Docker Socket" Target="/var/run/docker.sock" Default="/var/run/docker.sock" Mode="rw" Description="Local Docker Engine socket. Grants powerful host-level Docker control." Type="Path" Display="always" Required="true" Mask="false">/var/run/docker.sock</Config>
+  <Config Name="Unraid Storage Root" Target="/host/mnt" Default="/mnt" Mode="rw" Description="Provides access to appdata and other selected /mnt paths." Type="Path" Display="always" Required="true" Mask="false">/mnt</Config>
+  <Config Name="Docker Volumes" Target="/host/var/lib/docker/volumes" Default="/var/lib/docker/volumes" Mode="rw" Description="Required only when migrating Docker named volumes." Type="Path" Display="always" Required="false" Mask="false">/var/lib/docker/volumes</Config>
+  <Config Name="Unraid User Templates" Target="/host/boot/config/plugins/dockerMan/templates-user" Default="/boot/config/plugins/dockerMan/templates-user" Mode="rw" Description="Reads the source template and writes the migrated template." Type="Path" Display="always" Required="true" Mask="false">/boot/config/plugins/dockerMan/templates-user</Config>
+  <Config Name="Host Devices" Target="/host/dev" Default="/dev" Mode="ro" Description="Allows destination preflight to verify GPU, USB and other device paths." Type="Path" Display="advanced" Required="false" Mask="false">/dev</Config>
+  <Config Name="Application Data" Target="/data" Default="/mnt/user/appdata/vfe-docker-unraid-migrator" Mode="rw" Description="Pairing records, settings, job history and temporary migration state." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/vfe-docker-unraid-migrator</Config>
+  <Config Name="Web Port" Target="WEB_PORT" Default="8210" Mode="" Description="Host-network Web UI and peer API port. Must be unused on each server." Type="Variable" Display="always" Required="true" Mask="false">8210</Config>
+  <Config Name="Transfer Port" Target="RSYNC_PORT" Default="8211" Mode="" Description="Temporary authenticated rsync receiver port. Allow this port between both LAN IPs." Type="Variable" Display="always" Required="true" Mask="false">8211</Config>
+  <Config Name="Web Username" Target="APP_USERNAME" Default="admin" Mode="" Description="Web interface login username." Type="Variable" Display="always" Required="true" Mask="false">admin</Config>
+  <Config Name="Web Password" Target="APP_PASSWORD" Default="" Mode="" Description="Use a long unique password." Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Config Name="Image Pull Timeout" Target="IMAGE_PULL_TIMEOUT" Default="900" Mode="" Description="Maximum seconds to wait for a destination registry pull before failing with a clear error. Use image transfer mode when the registry is unavailable." Type="Variable" Display="advanced" Required="false" Mask="false">900</Config>
+  <Config Name="Stop Timeout" Target="STOP_TIMEOUT" Default="30" Mode="" Description="Seconds Docker waits for a graceful source-container shutdown." Type="Variable" Display="advanced" Required="false" Mask="false">30</Config>
+</Container>

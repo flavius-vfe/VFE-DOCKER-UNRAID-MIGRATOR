@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VFE Docker Unraid Migrator 0.0.1</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <section id="loginView" class="login-shell hidden">
+    <form id="loginForm" class="login-card">
+      <div class="brand-mark">↔</div>
+      <p class="eyebrow">UNRAID LAN MIGRATION</p>
+      <h1>VFE Docker Unraid Migrator</h1>
+      <p class="muted">Sign in to manage paired servers and migrations.</p>
+      <label>Username<input id="loginUsername" autocomplete="username" value="admin" required></label>
+      <label>Password<input id="loginPassword" type="password" autocomplete="current-password" required></label>
+      <button class="primary full" type="submit">Sign in</button>
+      <p id="loginError" class="error-text"></p>
+    </form>
+  </section>
+
+  <div id="appView" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark small">↔</span><div><strong>VFE Docker Unraid Migrator</strong><small>Bidirectional LAN transfer</small></div></div>
+      <nav>
+        <button class="nav-link active" data-view="dashboard">Overview</button>
+        <button class="nav-link" data-view="migrate">New migration</button>
+        <button class="nav-link" data-view="jobs">Migration history</button>
+        <button class="nav-link" data-view="servers">Servers & pairing</button>
+        <button class="nav-link" data-view="settings">Settings</button>
+      </nav>
+      <div class="sidebar-foot">
+        <div id="localIdentity" class="identity"></div>
+        <button id="logoutButton" class="ghost">Sign out</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <button id="mobileMenu" class="icon-button menu-button" aria-label="Open menu">☰</button>
+        <div><p class="eyebrow">VFE DOCKER UNRAID MIGRATOR</p><h1 id="pageTitle">Overview</h1></div>
+        <div id="connectionBadge" class="badge neutral">Loading…</div>
+      </header>
+
+      <div id="flash" class="flash hidden"></div>
+
+      <section id="view-dashboard" class="view active">
+        <div class="hero panel">
+          <div>
+            <span class="kicker">Two agents. Either direction.</span>
+            <h2>Move one container with its persistent data.</h2>
+            <p>Pair both Unraid servers, choose the direction, review paths and ports, then perform a two-pass transfer with rollback protection.</p>
+          </div>
+          <button class="primary" data-go="migrate">Start a migration</button>
+        </div>
+        <div id="serverCards" class="server-grid"></div>
+        <div class="grid-two">
+          <section class="panel">
+            <div class="panel-head"><div><h3>Recent migrations</h3><p>Latest jobs started by this agent.</p></div><button class="text-button" data-go="jobs">View all</button></div>
+            <div id="recentJobs" class="list"></div>
+          </section>
+          <section class="panel safety-panel">
+            <h3>Safe defaults</h3>
+            <div class="safety-item"><span>1</span><div><strong>Initial sync while running</strong><small>Most data moves before downtime.</small></div></div>
+            <div class="safety-item"><span>2</span><div><strong>Final sync while stopped</strong><small>Application data is consistent at cutover.</small></div></div>
+            <div class="safety-item"><span>3</span><div><strong>Keep source stopped</strong><small>Rollback remains available until you remove it.</small></div></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="view-servers" class="view">
+        <div class="grid-two">
+          <section class="panel">
+            <div class="panel-head"><div><h3>Paired servers</h3><p>Both agents use the same shared pairing secret.</p></div><button id="refreshServers" class="secondary">Refresh</button></div>
+            <div id="pairedServers" class="list"></div>
+          </section>
+          <section class="panel">
+            <h3>Pair another server</h3>
+            <p class="muted">On the other server generate a code, then enter its LAN address and code here.</p>
+            <form id="addPeerForm" class="form-stack">
+              <label>Other server URL<input id="peerUrl" placeholder="http://192.168.0.102:8210" required></label>
+              <label>One-time pairing code<input id="peerCode" inputmode="numeric" maxlength="6" placeholder="123456" required></label>
+              <button class="primary" type="submit">Pair server</button>
+            </form>
+            <hr>
+            <h3>Code for this server</h3>
+            <p class="muted">Generate a temporary code when pairing from the other server.</p>
+            <button id="generatePairCode" class="secondary">Generate pairing code</button>
+            <div id="pairCodeBox" class="pair-code hidden"><strong id="pairCode">000000</strong><small id="pairExpiry"></small></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="view-settings" class="view">
+        <section class="panel narrow">
+          <h3>Local agent identity</h3>
+          <p class="muted">The LAN IP and ports are advertised to the paired server. Port changes require recreating or restarting the container with matching environment values.</p>
+          <form id="settingsForm" class="form-grid">
+            <label>Server name<input id="serverName" required></label>
+            <label>LAN IP address<input id="lanIp" placeholder="192.168.0.101" required></label>
+            <label>Web/API port<input id="webPort" type="number" min="1" max="65535" required></label>
+            <label>Rsync transfer port<input id="rsyncPort" type="number" min="1" max="65535" required></label>
+            <div class="form-actions"><button class="primary" type="submit">Save settings</button></div>
+          </form>
+        </section>
+      </section>
+
+      <section id="view-migrate" class="view">
+        <div class="wizard-steps">
+          <button class="wizard-step active" data-step="1"><span>1</span>Direction</button>
+          <button class="wizard-step" data-step="2"><span>2</span>Container</button>
+          <button class="wizard-step" data-step="3"><span>3</span>Mapping</button>
+          <button class="wizard-step" data-step="4"><span>4</span>Review</button>
+        </div>
+
+        <section id="wizard-1" class="wizard-panel panel active">
+          <h3>Choose migration direction</h3>
+          <div class="direction-grid">
+            <label>Move from<select id="sourceServer"></select></label>
+            <button id="swapServers" class="swap-button" type="button" title="Swap direction">⇄</button>
+            <label>Move to<select id="destinationServer"></select></label>
+          </div>
+          <div class="wizard-actions"><span></span><button id="directionNext" class="primary">Choose container</button></div>
+        </section>
+
+        <section id="wizard-2" class="wizard-panel panel">
+          <div class="panel-head"><div><h3>Select one source container</h3><p id="containerSourceLabel"></p></div><input id="containerSearch" class="search" placeholder="Search containers"></div>
+          <div id="containerPicker" class="container-picker"></div>
+          <div class="wizard-actions"><button class="secondary" data-back="1">Back</button><button id="containerNext" class="primary" disabled>Analyze container</button></div>
+        </section>
+
+        <section id="wizard-3" class="wizard-panel panel">
+          <div class="panel-head"><div><h3>Map the destination</h3><p id="selectedContainerTitle"></p></div><span id="analysisState" class="badge neutral">Analyzing…</span></div>
+          <div class="form-grid compact">
+            <label>Destination container name<input id="destinationName"></label>
+            <div class="image-handling-field">
+              <span class="field-title">Image handling</span>
+              <div class="image-mode-grid">
+                <label class="image-mode-option">
+                  <input type="radio" name="imageMode" value="pull_configured">
+                  <span><strong>Pull configured source reference</strong><small>Use the repository text configured on the source container. An untagged reference is safely resolved to one <code>:latest</code> target.</small><code id="configuredSourceExample">qmcgaw/gluetun</code></span>
+                </label>
+                <label class="image-mode-option">
+                  <input type="radio" name="imageMode" value="pull_latest">
+                  <span><strong>Pull source repository :latest</strong><small>Remove the current source tag and pull the <code>:latest</code> tag from the same repository.</small><code id="latestSourceExample">qmcgaw/gluetun:latest</code></span>
+                </label>
+                <label class="image-mode-option">
+                  <input type="radio" name="imageMode" value="pull_stable">
+                  <span><strong>Pull source repository :stable</strong><small>Remove the current source tag and pull the <code>:stable</code> tag from the same repository.</small><code id="stableSourceExample">qmcgaw/gluetun:stable</code></span>
+                </label>
+                <label class="image-mode-option">
+                  <input type="radio" name="imageMode" value="pull_source">
+                  <span><strong>Pull exact source tag or digest</strong><small>Download the explicit tag or digest configured on the source container.</small><code>example/app:2.4.1</code></span>
+                </label>
+                <label class="image-mode-option">
+                  <input type="radio" name="imageMode" value="pull_custom">
+                  <span><strong>Pull a custom tag from registry</strong><small>Manually enter one repository tag or digest for the destination.</small><code>example/app:stable</code></span>
+                </label>
+                <label class="image-mode-option">
+                  <input type="radio" name="imageMode" value="existing">
+                  <span><strong>Use image already on destination</strong><small>Do not download or transfer an image. Select one already stored on the destination server.</small><code>sha256:abc123…</code></span>
+                </label>
+                <label class="image-mode-option">
+                  <input type="radio" name="imageMode" value="transfer">
+                  <span><strong>Transfer exact source image</strong><small>Export the image ID used by the source container and send it over the LAN.</small><code>Exact source image ID</code></span>
+                </label>
+              </div>
+              <label id="customImageRow" class="image-reference-row hidden">Custom registry image
+                <input id="customImageReference" placeholder="repository/image:tag">
+                <small>Must include an explicit tag or digest.</small>
+              </label>
+              <label id="existingImageRow" class="image-reference-row hidden">Destination image
+                <input id="existingImageReference" list="destinationImageChoices" placeholder="Select or enter repository/image:tag or image ID">
+                <datalist id="destinationImageChoices"></datalist>
+                <small id="destinationImagesHint">Loading destination images…</small>
+              </label>
+              <small id="imageModeHint" class="muted image-mode-hint"></small>
+            </div>
+            <label>Destination network<input id="networkMode" list="networkChoices" placeholder="bridge"><datalist id="networkChoices"><option value="bridge"><option value="host"><option value="none"></datalist></label>
+            <label>Destination static IP<input id="staticIp" placeholder="Leave empty for Docker assignment"></label>
+          </div>
+          <label class="check-row"><input id="createNetwork" type="checkbox"><span><strong>Create custom network if missing</strong><small>Uses the source network driver and IPAM blueprint.</small></span></label>
+
+          <h4>Persistent storage</h4>
+          <div id="mountMappings" class="mapping-list"></div>
+          <h4>Published ports</h4>
+          <div id="portMappings" class="mapping-list"></div>
+
+          <div class="option-grid">
+            <label class="check-row"><input id="initialSync" type="checkbox" checked><span><strong>Initial sync while source runs</strong><small>Reduces downtime before final synchronization.</small></span></label>
+            <label class="check-row"><input id="keepSource" type="checkbox" checked><span><strong>Keep source container for rollback</strong><small>It remains stopped after a successful migration.</small></span></label>
+            <label class="check-row"><input id="restartOnFailure" type="checkbox" checked><span><strong>Restart source if migration fails</strong><small>Restores the original service automatically after cutover failure.</small></span></label>
+          </div>
+          <div class="wizard-actions"><button class="secondary" data-back="2">Back</button><button id="mappingNext" class="primary">Run preflight</button></div>
+        </section>
+
+        <section id="wizard-4" class="wizard-panel panel">
+          <div class="panel-head"><div><h3>Review and start</h3><p>Nothing changes until you start the migration.</p></div><span id="preflightBadge" class="badge neutral">Waiting</span></div>
+          <div id="preflightResults" class="preflight-results"></div>
+          <div id="planSummary" class="summary-box"></div>
+          <div class="source-choice">
+            <strong>After a successful migration</strong>
+            <p id="sourcePolicyText">The source container will remain installed but stopped. Its appdata will not be deleted.</p>
+          </div>
+          <div class="wizard-actions"><button class="secondary" data-back="3">Back</button><button id="startMigration" class="danger" disabled>Start migration</button></div>
+        </section>
+      </section>
+
+      <section id="view-jobs" class="view">
+        <div class="panel-head page-head"><div><h3>Migration history</h3><p>Jobs initiated by this agent and local source jobs.</p></div><button id="refreshJobs" class="secondary">Refresh</button></div>
+        <div id="jobsList" class="jobs-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="jobDialog" class="job-dialog">
+    <div class="dialog-head"><div><p class="eyebrow">MIGRATION JOB</p><h2 id="jobDialogTitle">Container</h2></div><button id="closeJobDialog" class="icon-button">×</button></div>
+    <div class="progress-track"><div id="jobProgressBar"></div></div>
+    <div class="job-metrics"><div><small>Status</small><strong id="jobStatus"></strong></div><div><small>Phase</small><strong id="jobPhase"></strong></div><div><small>Progress</small><strong id="jobPercent"></strong></div></div>
+    <p id="jobError" class="error-text"></p>
+    <pre id="jobLogs" class="job-logs"></pre>
+    <div class="dialog-actions"><button id="rollbackButton" class="danger hidden">Roll back</button><button id="closeJobDialog2" class="secondary">Close</button></div>
+  </dialog>
+
+  <script src="/app.js"></script>
+</body>
+</html>
